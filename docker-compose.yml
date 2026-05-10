@@ -1,0 +1,49 @@
+name: advanced-dashboard-for-note
+
+services:
+  postgres:
+    image: postgres:18.3
+    command: "-d 1"
+    build: 
+      context: ./docker
+      dockerfile: Dockerfile.postgres
+    volumes:
+      - volume_postgres:/var/lib/postgresql
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  
+  neon-proxy:
+    image: ghcr.io/timowilhelm/local-neon-http-proxy:main
+    environment:
+      - PG_CONNECTION_STRING=${DATABASE_URL}
+    ports:
+      - '4444:4444'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  pgadmin:
+    image: dpage/pgadmin4:9.14.0
+    container_name: container_pgadmin
+    ports:
+      - 8080:80
+    volumes:
+      - volume_pgadmin:/var/lib/pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    depends_on:
+      - postgres
+
+volumes:
+  volume_postgres:
+  volume_pgadmin:

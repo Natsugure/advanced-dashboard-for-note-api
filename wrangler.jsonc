@@ -2,37 +2,15 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "advanced-dashboard-for-note-api",
   "main": "src/index.ts",
-  "compatibility_date": "2026-05-10"
-  // "compatibility_flags": [
-  //   "nodejs_compat"
-  // ],
-  // "vars": {
-  //   "MY_VAR": "my-variable"
-  // },
-  // "kv_namespaces": [
-  //   {
-  //     "binding": "MY_KV_NAMESPACE",
-  //     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  //   }
-  // ],
-  // "r2_buckets": [
-  //   {
-  //     "binding": "MY_BUCKET",
-  //     "bucket_name": "my-bucket"
-  //   }
-  // ],
-  // "d1_databases": [
-  //   {
-  //     "binding": "MY_DB",
-  //     "database_name": "my-database",
-  //     "database_id": ""
-  //   }
-  // ],
-  // "ai": {
-  //   "binding": "AI"
-  // },
-  // "observability": {
-  //   "enabled": true,
-  //   "head_sampling_rate": 1
-  // }
+  "compatibility_date": "2026-05-10",
+  "vars": {
+    "CORS_ORIGIN": "http://localhost:5173"
+  },
+  "env": {
+    "production": {
+      "vars": {
+        "CORS_ORIGIN": "https://your-app.example.com" // 本番環境デプロイ先が決定したら書き換える
+      }
+    }
+  }
 }

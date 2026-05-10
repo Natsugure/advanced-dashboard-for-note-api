@@ -1,0 +1,2 @@
+# Neon Proxy経由で接続するため、docker-compose.ymlと値が異なる点に注意
+DATABASE_URL=http://localhost:4444/YOUR_USER_NAME_HERE:YOUR_PASSWORD_HERE@localhost/YOUR_DB_NAME_HERE
