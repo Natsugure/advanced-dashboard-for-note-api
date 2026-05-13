@@ -9,8 +9,4 @@ app.get('/', (c) => {
   return c.text('Hello Hono!')
 })
 
-app.get("env", (c) => {
-  return c.text(env(c).DATABASE_URL)
-})
-
 export default app
