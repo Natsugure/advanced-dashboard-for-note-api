@@ -1,7 +1,11 @@
+import postgres from 'postgres';
 import { neon } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-http';
+import { drizzle as drizzleHttp } from 'drizzle-orm/neon-http';
+import { drizzle as drizzlePg } from 'drizzle-orm/postgres-js';
+import * as schema from './schema';
 
-const sql = neon(process.env.DATABASE_URL!);
-const db = drizzle({ client: sql });
-
-const result = await db.execute('select 1');
+export function createDb(databaseUrl: string, nodeEnv?: string) {
+  return nodeEnv === 'development' ? 
+  drizzlePg({ client: postgres(databaseUrl), schema: schema }) :
+  drizzleHttp({ client: neon(databaseUrl), schema: schema });
+}
