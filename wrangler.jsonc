@@ -3,13 +3,14 @@
   "name": "advanced-dashboard-for-note-api",
   "main": "src/index.ts",
   "compatibility_date": "2026-05-10",
+  "compatibility_flags": ["nodejs_compat"],
   "vars": {
-    "CORS_ORIGIN": "http://localhost:5173"
+    "CORS_ORIGIN": "http://localhost:5173",
   },
   "env": {
     "production": {
       "vars": {
-        "CORS_ORIGIN": "https://your-app.example.com" // 本番環境デプロイ先が決定したら書き換える
+        "CORS_ORIGIN": "https://your-app.example.com", // 本番環境デプロイ先が決定したら書き換える
       }
     }
   }
