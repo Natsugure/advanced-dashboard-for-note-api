@@ -1,13 +1,15 @@
-import { pgTable, uuid, varchar, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar, timestamp, integer, check } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: uuid('id').primaryKey().default(sql`uuidv7()`),
-  clerkUserId: varchar('clerk_user_id', { length: 255 }).notNull().unique(),
-  noteUserId: varchar('note_user_id', { length: 255 }).notNull().unique(),
+  clerkUserId: varchar('clerk_user_id', { length: 64 }).notNull().unique(),
+  noteUserId: integer('note_user_id').notNull().unique(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
-});
+}, (table) => [
+  check("user_id_positive", sql`${table.noteUserId} > 0`)
+]);
 
 export const articles = pgTable("articles", {
   id: integer("id").primaryKey(),
@@ -23,4 +25,8 @@ export const stats = pgTable("stats", {
   likeCount: integer("like_count").notNull().default(0),
   commentCount: integer("comment_count").notNull().default(0),
   fetchedAt: timestamp("fetched_at").notNull(),
-});
+}, (table) => [
+  check("read_count_positive", sql`${table.readCount} >= 0`),
+  check("like_count_positive", sql`${table.likeCount} >= 0`),
+  check("comment_count_positive", sql`${table.commentCount} >= 0`)
+]);
