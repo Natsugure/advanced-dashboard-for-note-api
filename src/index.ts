@@ -1,23 +1,20 @@
-import { Hono } from 'hono'
+import { OpenAPIHono } from '@hono/zod-openapi'
+import { swaggerUI } from '@hono/swagger-ui'
 import type { Env } from './types/env' 
-import { createDb } from './db/client' 
-import { count } from 'drizzle-orm'
-import { users } from './db/schema'
-import usersRoute from './routes/users'
-import { clerkMiddleware } from '@clerk/hono'
+import usersRoutes from './routes/users'
 
-const app = new Hono<{ Bindings: Env }>()
+const app = new OpenAPIHono<{ Bindings: Env }>()
 
-app.use('*', clerkMiddleware())
+app.route('/api/users', usersRoutes)
 
-app.get('/api/health', async (c) => {
-  const db = createDb(c.env.DATABASE_URL)
-
-  const data = await db.select({ count: count() }).from(users)
-
-  return c.json(data)
+app.doc('/api/docs', {
+  openapi: '3.0.0',
+  info: {
+    title: 'Advanced Dashboard for note API',
+    version: '1.0.0'
+  }
 })
 
-app.route('/api/users', usersRoute)
+app.get('/docs/ui', swaggerUI({ url: '/api/docs' }))
 
 export default app

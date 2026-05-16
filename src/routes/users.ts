@@ -1,31 +1,91 @@
-import { Hono } from "hono";
+import { createRoute, OpenAPIHono, type RouteHandler } from '@hono/zod-openapi'
 import { eq, or } from "drizzle-orm";
 import { users } from "../db/schema";
 import { clerkMiddleware, getAuth } from "@clerk/hono";
 import { createDb } from "../db/client";
 import type { Env } from "../types/env";
+import { CreateUserRequestSchema, UserParamsSchema, UserSchema } from '../schema';
 
-const usersRoute = new Hono<{ Bindings: Env }>()
+const app = new OpenAPIHono<{ Bindings: Env }>()
+app.use('*', clerkMiddleware())
 
-usersRoute.use("*", clerkMiddleware())
+const getUserRoute = createRoute({
+  method: "get",
+  path: "/:id",
+  request: {
+    params: UserParamsSchema
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: UserSchema
+        }
+      },
+      description: "指定したIDのユーザーの取得に成功しました"
+    },
+    404: {
+      description: "指定したIDのユーザーが見つかりませんでした"
+    }
+  }
+})
 
-usersRoute.get("/:id", async (c) => {
+const getUserHandler: RouteHandler<typeof getUserRoute, { Bindings: Env }> = async (c) => {
   const id = c.req.param("id")
   const db = createDb(c.env.DATABASE_URL)
+
   const user = await db.select().from(users).where(eq(users.id, id))
   if (user.length === 0) {
     return c.json({ error: "User not found" }, 404)
   }
-  return c.json(user[0])
+  
+  return c.json({
+    id: user[0].id,
+    noteUserId: user[0].noteUserId
+  })
+}
+
+
+const createUserRoute = createRoute({
+  method: "post",
+  path: "/",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: CreateUserRequestSchema
+        }
+      }
+    }
+  },
+  responses: {
+    201: {
+      content: {
+        "application/json": {
+          schema: UserSchema
+        }
+      },
+      description: "ユーザーの作成に成功しました"
+    },
+    400: {
+      description: "ユーザーの作成に失敗しました"
+    },
+    401: {
+      description: "認証に失敗しました"
+    },
+    500: {
+      description: "サーバーエラーが発生しました"
+    }
+  }
 })
 
-usersRoute.post("/", async (c) => {
+const createUserHandler: RouteHandler<typeof createUserRoute, { Bindings: Env }> = async (c) => {
   const auth = getAuth(c)
   if (!auth?.userId) {
     return c.json({ error: "Unauthorized" }, 401)
   }
 
-  const body = await c.req.json()
+  const body = c.req.valid('json')
   const db = createDb(c.env.DATABASE_URL)
 
   try {
@@ -44,11 +104,15 @@ usersRoute.post("/", async (c) => {
       noteUserId: body.noteUserId,
     }).returning()
 
-    return c.json(newUser[0])
+    return c.json(newUser[0], 201)
   } catch (e) {
     console.error(e)
     return c.json({ error: "Something went wrong" }, 500)
   }
-})
+}
 
-export default usersRoute;
+const usersRoutes = app
+  .openapi(getUserRoute, getUserHandler)
+  .openapi(createUserRoute, createUserHandler)
+
+export default usersRoutes
