@@ -4,6 +4,7 @@ import type { Env } from './types/env'
 import { createDb } from './db/client' 
 import { count } from 'drizzle-orm'
 import { users } from './db/schema'
+import usersRoute from './routes/users'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -18,5 +19,7 @@ app.get('/health', async (c) => {
 
   return c.json(data)
 })
+
+app.route('/api/users', usersRoute)
 
 export default app

@@ -4,7 +4,7 @@ import { sql } from "drizzle-orm";
 export const users = pgTable("users", {
   id: uuid('id').primaryKey().default(sql`uuidv7()`),
   clerkUserId: varchar('clerk_user_id', { length: 255 }).notNull().unique(),
-  noteUserId: varchar('note_user_id', { length: 30 }).notNull().unique(),
+  noteUserId: varchar('note_user_id', { length: 255 }).notNull().unique(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
 });
