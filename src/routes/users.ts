@@ -1,74 +1,54 @@
 import { Hono } from "hono";
-import { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { users } from "../db/schema";
-import { randomUUID } from "node:crypto";
+import { clerkMiddleware, getAuth } from "@clerk/hono";
+import { createDb } from "../db/client";
+import type { Env } from "../types/env";
 
-const usersRoute = new Hono()
+const usersRoute = new Hono<{ Bindings: Env }>()
 
-type User = InferSelectModel<typeof users>
+usersRoute.use("*", clerkMiddleware())
 
-const userExample: User[] = [
-  {
-    id: "123",
-    clerkUserId: "123",
-    noteUserId: "example1",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }
-]
-
-usersRoute.get("/:id", (c) => {
+usersRoute.get("/:id", async (c) => {
   const id = c.req.param("id")
-  const user = userExample.find((user) => user.id === id)
-  if (!user) {
+  const db = createDb(c.env.DATABASE_URL)
+  const user = await db.select().from(users).where(eq(users.id, id))
+  if (user.length === 0) {
     return c.json({ error: "User not found" }, 404)
   }
-  return c.json(user)
+  return c.json(user[0])
 })
 
 usersRoute.post("/", async (c) => {
-  const body = await c.req.json()
-  const duplicatedUser = userExample.findIndex((u) => u.noteUserId === body.noteUserId)
-  if (duplicatedUser !== -1) {
-    return c.json({ error: "User already exists" }, 400)
-  }
-  
-  const newUser: InferSelectModel<typeof users> = {
-    id: randomUUID(),
-    clerkUserId: "124",
-    noteUserId: body.noteUserId,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }
-  userExample.push(newUser)
-  return c.json(newUser)
-})
-
-usersRoute.put("/:id", async (c) => {
-  const id = c.req.param("id")
-  const index = userExample.findIndex((u) => u.id === id)
-  if (index === -1) {
-    return c.json({ error: "User not found" }, 404)
+  const auth = getAuth(c)
+  if (!auth?.userId) {
+    return c.json({ error: "Unauthorized" }, 401)
   }
 
   const body = await c.req.json()
-  userExample[index] = {
-    ...userExample[index],
-    ...body,
-    updatedAt: new Date()
-  }
-  return c.json(userExample[index])
-})
+  const db = createDb(c.env.DATABASE_URL)
 
-usersRoute.delete("/:id", (c) => {
-  const id = c.req.param("id")
-  const index = userExample.findIndex((u) => u.id === id)
-  if (index === -1) {
-    return c.json({ error: "User not found" }, 404)
-  }
+  try {
+    const duplicatedUser = await db.select().from(users).where(
+      or(
+        eq(users.clerkUserId, auth.userId),
+        eq(users.noteUserId, body.noteUserId)
+      )
+    )
+    if (duplicatedUser.length > 0) {
+      return c.json({ error: "User already exists" }, 400)
+    }
 
-  userExample.splice(index, 1)
-  return c.newResponse(null, 204)
+    const newUser = await db.insert(users).values({
+      clerkUserId: auth.userId,
+      noteUserId: body.noteUserId,
+    }).returning()
+
+    return c.json(newUser[0])
+  } catch (e) {
+    console.error(e)
+    return c.json({ error: "Something went wrong" }, 500)
+  }
 })
 
 export default usersRoute;
