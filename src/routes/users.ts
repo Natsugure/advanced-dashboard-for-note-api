@@ -1,7 +1,7 @@
 import { createRoute, OpenAPIHono, type RouteHandler } from '@hono/zod-openapi'
 import { eq, or } from "drizzle-orm";
 import { users } from "../db/schema";
-import { clerkMiddleware, getAuth } from "@clerk/hono";
+import { getAuth } from "@clerk/hono";
 import { createDb } from "../db/client";
 import type { Env } from "../types/env";
 import { CreateUserRequestSchema, UserParamsSchema, UserSchema } from '../schema';
