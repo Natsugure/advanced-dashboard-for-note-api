@@ -1,0 +1,134 @@
+import { createRoute, OpenAPIHono, type RouteHandler } from '@hono/zod-openapi'
+import { eq, or } from "drizzle-orm";
+import { users } from "../db/schema";
+import { clerkMiddleware, getAuth } from "@clerk/hono";
+import { createDb } from "../db/client";
+import type { Env } from "../types/env";
+import { CreateUserRequestSchema, UserParamsSchema, UserSchema } from '../schema';
+
+const app = new OpenAPIHono<{ Bindings: Env }>({
+  defaultHook: (result, c) => {
+    if (!result.success) {
+      return c.json({ error: "Bad Request", details: result.error.issues }, 400)
+    }
+  }
+})
+
+const getUserRoute = createRoute({
+  method: "get",
+  path: "/:id",
+  request: {
+    params: UserParamsSchema
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: UserSchema
+        }
+      },
+      description: "指定したIDのユーザーの取得に成功しました"
+    },
+    400: {
+      description: "リクエストが不正です"
+    },
+    404: {
+      description: "指定したIDのユーザーが見つかりませんでした"
+    },
+    500: {
+      description: "サーバーエラーが発生しました"
+    }
+  }
+})
+
+const getUserHandler: RouteHandler<typeof getUserRoute, { Bindings: Env }> = async (c) => {
+  const id = c.req.param("id")
+  const db = createDb(c.env.DATABASE_URL)
+
+  try {
+    const user = await db.select().from(users).where(eq(users.id, id))
+    if (user.length === 0) {
+      return c.json({ error: "User not found" }, 404)
+    }
+
+    return c.json({
+      id: user[0].id,
+      noteUserId: user[0].noteUserId
+    })
+  } catch (e) {
+    console.error(e)
+    return c.json({ error: "Something went wrong" }, 500)
+  }
+}
+
+
+const createUserRoute = createRoute({
+  method: "post",
+  path: "/",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: CreateUserRequestSchema
+        }
+      }
+    }
+  },
+  responses: {
+    201: {
+      content: {
+        "application/json": {
+          schema: UserSchema
+        }
+      },
+      description: "ユーザーの作成に成功しました"
+    },
+    400: {
+      description: "ユーザーの作成に失敗しました"
+    },
+    401: {
+      description: "認証に失敗しました"
+    },
+    500: {
+      description: "サーバーエラーが発生しました"
+    }
+  }
+})
+
+const createUserHandler: RouteHandler<typeof createUserRoute, { Bindings: Env }> = async (c) => {
+  const auth = getAuth(c)
+  if (!auth?.userId) {
+    return c.json({ error: "Unauthorized" }, 401)
+  }
+
+  const body = c.req.valid('json')
+  const db = createDb(c.env.DATABASE_URL)
+
+  try {
+    const duplicatedUser = await db.select().from(users).where(
+      or(
+        eq(users.clerkUserId, auth.userId),
+        eq(users.noteUserId, body.noteUserId)
+      )
+    )
+    if (duplicatedUser.length > 0) {
+      return c.json({ error: "User already exists" }, 400)
+    }
+
+    const newUser = await db.insert(users).values({
+      clerkUserId: auth.userId,
+      noteUserId: body.noteUserId,
+    }).returning()
+
+    return c.json(newUser[0], 201)
+  } catch (e) {
+    console.error(e)
+    return c.json({ error: "Something went wrong" }, 500)
+  }
+}
+
+const usersRoutes = app
+  .openapi(getUserRoute, getUserHandler)
+  .openapi(createUserRoute, createUserHandler)
+
+export default usersRoutes

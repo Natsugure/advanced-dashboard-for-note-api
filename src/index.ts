@@ -1,22 +1,36 @@
-import { Hono } from 'hono'
-import { env } from 'hono/adapter'
+import { OpenAPIHono } from '@hono/zod-openapi'
+import { swaggerUI } from '@hono/swagger-ui'
 import type { Env } from './types/env' 
-import { createDb } from './db/client' 
-import { count } from 'drizzle-orm'
-import { users } from './db/schema'
+import usersRoutes from './routes/users'
+import { clerkMiddleware } from '@clerk/hono'
+import { HTTPException } from 'hono/http-exception'
 
-const app = new Hono<{ Bindings: Env }>()
+const app = new OpenAPIHono<{ Bindings: Env }>()
+app.use('*', clerkMiddleware());
 
-app.get('/', (c) => {
-  return c.text('Hello Hono!')
+app.route('/api/users', usersRoutes)
+
+app.onError((err, c) => {
+  if (err instanceof TypeError && err.message.includes('cannot have a body')) {
+    return c.json({ error: "Bad Request" }, 400)
+  }
+
+  if (err instanceof HTTPException) {
+    return err.getResponse()
+  }
+
+  console.error(err)
+  return c.json({ error: "Something went wrong" }, 500)
 })
 
-app.get('/health', async (c) => {
-  const db = createDb(c.env.DATABASE_URL)
-
-  const data = await db.select({ count: count() }).from(users)
-
-  return c.json(data)
+app.doc('/api/docs', {
+  openapi: '3.0.0',
+  info: {
+    title: 'Advanced Dashboard for note API',
+    version: '1.0.0'
+  }
 })
+
+app.get('/docs/ui', swaggerUI({ url: '/api/docs' }))
 
 export default app
