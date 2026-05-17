@@ -6,8 +6,13 @@ import { createDb } from "../db/client";
 import type { Env } from "../types/env";
 import { CreateUserRequestSchema, UserParamsSchema, UserSchema } from '../schema';
 
-const app = new OpenAPIHono<{ Bindings: Env }>()
-app.use('*', clerkMiddleware())
+const app = new OpenAPIHono<{ Bindings: Env }>({
+  defaultHook: (result, c) => {
+    if (!result.success) {
+      return c.json({ error: "Bad Request", details: result.error.issues }, 400)
+    }
+  }
+})
 
 const getUserRoute = createRoute({
   method: "get",
@@ -24,8 +29,14 @@ const getUserRoute = createRoute({
       },
       description: "指定したIDのユーザーの取得に成功しました"
     },
+    400: {
+      description: "リクエストが不正です"
+    },
     404: {
       description: "指定したIDのユーザーが見つかりませんでした"
+    },
+    500: {
+      description: "サーバーエラーが発生しました"
     }
   }
 })
@@ -34,15 +45,20 @@ const getUserHandler: RouteHandler<typeof getUserRoute, { Bindings: Env }> = asy
   const id = c.req.param("id")
   const db = createDb(c.env.DATABASE_URL)
 
-  const user = await db.select().from(users).where(eq(users.id, id))
-  if (user.length === 0) {
-    return c.json({ error: "User not found" }, 404)
+  try {
+    const user = await db.select().from(users).where(eq(users.id, id))
+    if (user.length === 0) {
+      return c.json({ error: "User not found" }, 404)
+    }
+
+    return c.json({
+      id: user[0].id,
+      noteUserId: user[0].noteUserId
+    })
+  } catch (e) {
+    console.error(e)
+    return c.json({ error: "Something went wrong" }, 500)
   }
-  
-  return c.json({
-    id: user[0].id,
-    noteUserId: user[0].noteUserId
-  })
 }
 
 
