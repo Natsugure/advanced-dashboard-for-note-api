@@ -2,10 +2,26 @@ import { OpenAPIHono } from '@hono/zod-openapi'
 import { swaggerUI } from '@hono/swagger-ui'
 import type { Env } from './types/env' 
 import usersRoutes from './routes/users'
+import { clerkMiddleware } from '@clerk/hono'
+import { HTTPException } from 'hono/http-exception'
 
 const app = new OpenAPIHono<{ Bindings: Env }>()
+app.use('*', clerkMiddleware());
 
 app.route('/api/users', usersRoutes)
+
+app.onError((err, c) => {
+  if (err instanceof TypeError && err.message.includes('cannot have a body')) {
+    return c.json({ error: "Bad Request" }, 400)
+  }
+
+  if (err instanceof HTTPException) {
+    return err.getResponse()
+  }
+
+  console.error(err)
+  return c.json({ error: "Something went wrong" }, 500)
+})
 
 app.doc('/api/docs', {
   openapi: '3.0.0',
