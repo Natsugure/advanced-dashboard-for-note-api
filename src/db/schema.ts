@@ -14,6 +14,7 @@ export const users = pgTable("users", {
 export const articles = pgTable("articles", {
   id: integer("id").primaryKey(),
   userId: uuid("user_id").references(() => users.id).notNull(),
+  key: varchar("key", { length: 64 }).notNull().unique(),
   title: varchar("title", { length: 255 }).notNull(),
   publishedAt: timestamp("published_at").notNull(),
 });

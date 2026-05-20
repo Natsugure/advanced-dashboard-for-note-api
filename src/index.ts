@@ -4,11 +4,13 @@ import type { Env } from './types/env'
 import usersRoutes from './routes/users'
 import { clerkMiddleware } from '@clerk/hono'
 import { HTTPException } from 'hono/http-exception'
+import articleRoutes from './routes/articles'
 
 const app = new OpenAPIHono<{ Bindings: Env }>()
 app.use('*', clerkMiddleware());
 
 app.route('/api/users', usersRoutes)
+app.route('/api/articles', articleRoutes)
 
 app.onError((err, c) => {
   if (err instanceof TypeError && err.message.includes('cannot have a body')) {
