@@ -2,6 +2,10 @@ import { createDb } from "../db/client";
 import { eq, type InferInsertModel } from "drizzle-orm";
 import { stats } from "../db/schema";
 
+export async function getStats(db: ReturnType<typeof createDb>, id: number) {
+  return await db.select().from(stats).where(eq(stats.articleId, id))
+}
+
 export async function createStats(db: ReturnType<typeof createDb>, data: InferInsertModel<typeof stats>) {
   try {
     const newStats = await db.insert(stats).values({

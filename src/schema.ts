@@ -40,8 +40,16 @@ export const StatsParamsSchema = z.object({
 })
 
 export const GetStatsResponseSchema = z.object({
-  article: ArticleSchema,
-  stats: z.array(StatsSchema)
+  article: z.object({
+    title: z.string(),
+    publishedAt: z.iso.datetime(),
+  }),
+  stats: z.array(z.object({
+    readCount: z.int(),
+    likeCount: z.int(),
+    commentCount: z.int(),
+    fetchedAt: z.iso.datetime(),
+  }))
 })
 
 export const CreateStatsRequestSchema = z.object({

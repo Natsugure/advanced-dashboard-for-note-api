@@ -1,13 +1,13 @@
 import { createRoute, OpenAPIHono, type RouteHandler } from '@hono/zod-openapi'
-import { eq, InferInsertModel, or } from "drizzle-orm";
+import { InferInsertModel } from "drizzle-orm";
 import { articles, stats } from "../db/schema";
 import { getAuth } from "@clerk/hono";
 import { createDb } from "../db/client";
 import type { Env } from "../types/env";
-import { ArticleSchema, CreateStatsRequestSchema, StatsParamsSchema, GetStatsResponseSchema } from '../schema';
+import { CreateStatsRequestSchema, StatsParamsSchema, GetStatsResponseSchema } from '../schema';
 import { createArticle, getArticle } from '../services/articles';
-import { createStats } from '../services/stats';
-import { create } from 'node:domain';
+import { createStats, getStats } from '../services/stats';
+import { getUser } from '../services/user';
 
 const app = new OpenAPIHono<{ Bindings: Env }>({
   defaultHook: (result, c) => {
@@ -35,7 +35,6 @@ const getStatsRoute = createRoute({
     400: {
       description: "リクエストが不正です"
     },
-    // TODO: 他人の記事を指定したときに403か404を返すようにしたい
     404: {
       description: "指定したIDの記事が見つかりませんでした"
     },
@@ -46,25 +45,35 @@ const getStatsRoute = createRoute({
 })
 
 const getStatsHandler: RouteHandler<typeof getStatsRoute, { Bindings: Env }> = async (c) => {
-  const noteArticleId = c.req.valid("param").noteArticleId
-  if (isNaN(noteArticleId)) {
-    return c.json({ error: "Invalid noteArticleId" }, 400)
+  const auth = getAuth(c)
+  if (!auth?.isAuthenticated) {
+    return c.json({ error: "Unauthorized" }, 401)
   }
 
-  const db = createDb(c.env.DATABASE_URL)
-
   try {
-    const article = await db.select().from(articles).where(eq(articles.id, noteArticleId))
-    if (article.length === 0) {
+    const db = createDb(c.env.DATABASE_URL)
+    const user = await getUser(db, auth.userId)
+    if (!user) {
+      return c.json({ error: "Bad Request" }, 400)
+    }
+
+    const noteArticleId = c.req.valid("param").noteArticleId
+
+    const article = await getArticle(db, noteArticleId)
+    if (!article) {
       return c.json({ error: "Article not found" }, 404)
     }
 
-    const statsData = await db.select().from(stats).where(eq(stats.articleId, noteArticleId))
+    if (article.userId !== user.id) {
+      return c.json({ error: "Article not found" }, 404)
+    }
+
+    const statsData = await getStats(db, article.id)
 
     return c.json({
       article: {
-        title: article[0].title,
-        publishedAt: article[0].publishedAt,
+        title: article.title,
+        publishedAt: article.publishedAt,
       },
       stats: statsData.map(stat => ({
         readCount: stat.readCount,
@@ -120,6 +129,11 @@ const createStatsHandler: RouteHandler<typeof createStatsRoute, { Bindings: Env 
   }
 
   const db = createDb(c.env.DATABASE_URL)
+  const user = await getUser(db, auth.userId)
+  if (!user) {
+    return c.json({ error: "Bad Request" }, 400)
+  }
+
   const id = c.req.valid("param").noteArticleId
   const body = c.req.valid('json')
   try {
@@ -128,7 +142,7 @@ const createStatsHandler: RouteHandler<typeof createStatsRoute, { Bindings: Env 
       const articleData: InferInsertModel<typeof articles> = {
         id: id,
         key: body.article.key,
-        userId: auth.userId,
+        userId: user.id,
         title: body.article.title,
         publishedAt: body.article.publishedAt,
       }
