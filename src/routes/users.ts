@@ -16,9 +16,10 @@ const app = new OpenAPIHono<{ Bindings: Env }>({
 
 const getUserRoute = createRoute({
   method: "get",
-  path: "/:id",
+  path: "/{id}",
+  security: [{ bearerAuth: [] }],
   request: {
-    params: UserParamsSchema
+    params: UserParamsSchema,
   },
   responses: {
     200: {

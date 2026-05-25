@@ -1,4 +1,5 @@
 import { OpenAPIHono } from '@hono/zod-openapi'
+import { cors } from 'hono/cors'
 import { swaggerUI } from '@hono/swagger-ui'
 import type { Env } from './types/env' 
 import usersRoutes from './routes/users'
@@ -7,6 +8,22 @@ import { HTTPException } from 'hono/http-exception'
 import articleRoutes from './routes/articles'
 
 const app = new OpenAPIHono<{ Bindings: Env }>()
+
+app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
+  type: 'http',
+  scheme: 'bearer',
+  bearerFormat: 'JWT'
+})
+
+app.use('*', async (c, next) => {
+  const corsMiddleware = cors({
+    origin: c.env.CORS_ORIGIN,
+    allowHeaders: ['Authorization', 'Content-Type'],
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  })
+  return corsMiddleware(c, next)
+})
+
 app.use('*', clerkMiddleware());
 
 app.route('/api/users', usersRoutes)

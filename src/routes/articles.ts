@@ -19,7 +19,7 @@ const app = new OpenAPIHono<{ Bindings: Env }>({
 
 const getStatsRoute = createRoute({
   method: "get",
-  path: "/:noteArticleId/stats",
+  path: "/{noteArticleId}/stats",
   request: {
     params: StatsParamsSchema
   },
@@ -90,7 +90,7 @@ const getStatsHandler: RouteHandler<typeof getStatsRoute, { Bindings: Env }> = a
 
 const createStatsRoute = createRoute({
   method: "post",
-  path: "/:noteArticleId/stats",
+  path: "/{noteArticleId}/stats",
   request: {
     params: StatsParamsSchema,
     body: {

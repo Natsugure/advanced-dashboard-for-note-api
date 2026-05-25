@@ -1,5 +1,9 @@
 import { z } from "@hono/zod-openapi"
 
+export const AuthHeaderSchema = z.object({
+  Authorization: z.string().openapi({ example: 'Bearer <token>' })
+})
+
 export const UserSchema = z.object({
   id: z.uuid().openapi({ example: '12345678-1234-1234-1234-1234567890ab' }),
   noteUserId: z.int().openapi({ example: 12345678 }),
