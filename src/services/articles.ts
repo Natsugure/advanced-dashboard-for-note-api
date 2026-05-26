@@ -12,6 +12,11 @@ export async function getArticle(db: ReturnType<typeof createDb>, id: number) {
   return article[0]
 }
 
+export async function getArticles(db: ReturnType<typeof createDb>, userId: string) {
+  const result = await db.select().from(articles).where(eq(articles.userId, userId))
+  return result
+}
+
 export async function createArticle(db: ReturnType<typeof createDb>, data: InferInsertModel<typeof articles>) {
   try {
     if (!(isValidArticle)) {

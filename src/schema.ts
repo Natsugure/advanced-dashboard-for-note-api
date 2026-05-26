@@ -30,6 +30,15 @@ export const ArticleSchema = z.object({
   publishedAt: z.iso.datetime().openapi({ example: '2023-01-01T00:00:00.000Z' }),
 }).openapi('Article')
 
+export const GetArticlesResponseSchema = z.object({
+  articles: z.array(z.object({
+    id: z.int().openapi({ example: 123456789 }),
+    key: z.string().openapi({ example: 'n12345abcdef' }),
+    title: z.string(),
+    publishedAt: z.iso.datetime().openapi({ example: '2023-01-01T00:00:00.000Z' }),
+  }))
+})
+
 export const StatsSchema = z.object({
   id: z.uuid().openapi({ example: '12345678-1234-1234-1234-1234567890ab' }),
   articleId: z.int().openapi({ example: 123456789 }),
@@ -69,3 +78,10 @@ export const CreateStatsRequestSchema = z.object({
     fetchedAt: z.iso.datetime().pipe(z.coerce.date()).openapi({ example: '2023-01-01T00:00:00.000Z' }),
   })
 })
+
+export const GetMyStatsResponseSchema = z.object({
+  data: z.array(z.object(GetStatsResponseSchema))
+})
+
+// TODO: クエリでページネーションを実装するか？
+// あと、1000記事とか書いている人が全記事の統計をフロントに持たないと、サマリーすら表示できないのは設計として不便ではないか？
