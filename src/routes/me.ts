@@ -3,8 +3,8 @@ import type { Env } from "../types/env";
 import { getAuth } from '@clerk/hono';
 import { createDb } from '../db/client';
 import { getUser } from '../services/user';
-import { UserSchema, GetArticlesResponseSchema, GetStatsResponseSchema, StatsParamsSchema, CreateStatsRequestSchema } from '../schema';
-import { eq, InferInsertModel, InferSelectModel } from 'drizzle-orm';
+import { UserSchema, GetArticlesResponseSchema, GetStatsResponseSchema, StatsParamsSchema, CreateStatsRequestSchema, GetMyStatsResponseSchema } from '../schema';
+import { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 import { articles, stats, users } from '../db/schema';
 import { createArticle, getArticle, getArticles } from '../services/articles';
 import { createStats, getStats } from '../services/stats';
@@ -268,4 +268,62 @@ const createStatsHandler: RouteHandler<typeof createStatsRoute, { Bindings: Env,
   }
 }
 
-// TODO: `getMyStatsRoute`を実装する
+const getMyStatsRoute = createRoute({
+  method: "get",
+  path: "/stats",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: GetMyStatsResponseSchema
+        }
+      },
+      description: "統計の取得に成功しました"
+    },
+    400: {
+      description: "リクエストが不正です"
+    },
+    401: {
+      description: "認証に失敗しました"
+    },
+    500: {
+      description: "サーバーエラーが発生しました"
+    }
+  }
+})
+
+export const getMyStatsHandler: RouteHandler<typeof getMyStatsRoute, { Bindings: Env, Variables: Variables }> = async (c) => {
+  const user = c.get('user')
+  const db = c.get('db')
+
+  try {
+    const articles = await getArticles(db, user.id)
+    const stats = (await Promise.all(
+      articles.flatMap((article) => getStats(db, article.id))
+    )).flat()
+
+    const result = articles.map((article) => {
+      const articleStats = stats.filter((stat) => stat.articleId === article.id)
+      return {
+        article: {
+          title: article.title,
+          publishedAt: article.publishedAt,
+        },
+        stats: articleStats
+      }
+    })
+
+    return c.json({ data: result })
+  } catch {
+    return c.json({ error: "Something went wrong" }, 500)
+  }
+}
+
+const meRoutes = app.openapi(getUserRoute, getUserHandler)
+  .openapi(getMyArticlesRoute, getMyArticlesHandler)
+  .openapi(getArticleStatsRoute, getArticleStatsHandler)
+  .openapi(createStatsRoute, createStatsHandler)
+  .openapi(getMyStatsRoute, getMyStatsHandler)
+
+export default meRoutes

@@ -1,10 +1,11 @@
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { cors } from 'hono/cors'
 import { swaggerUI } from '@hono/swagger-ui'
-import type { Env } from './types/env' 
-import usersRoutes from './routes/users'
 import { clerkMiddleware } from '@clerk/hono'
 import { HTTPException } from 'hono/http-exception'
+import type { Env } from './types/env' 
+import usersRoutes from './routes/users'
+import meRoutes from './routes/me'
 
 const app = new OpenAPIHono<{ Bindings: Env }>()
 
@@ -26,6 +27,7 @@ app.use('*', async (c, next) => {
 app.use('*', clerkMiddleware());
 
 app.route('/api/users', usersRoutes)
+app.route('/api/me', meRoutes)
 
 app.onError((err, c) => {
   if (err instanceof TypeError && err.message.includes('cannot have a body')) {
