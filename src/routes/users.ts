@@ -14,58 +14,10 @@ const app = new OpenAPIHono<{ Bindings: Env }>({
   }
 })
 
-// const getUserRoute = createRoute({
-//   method: "get",
-//   path: "/{id}",
-//   security: [{ bearerAuth: [] }],
-//   request: {
-//     params: UserParamsSchema,
-//   },
-//   responses: {
-//     200: {
-//       content: {
-//         "application/json": {
-//           schema: UserSchema
-//         }
-//       },
-//       description: "指定したIDのユーザーの取得に成功しました"
-//     },
-//     400: {
-//       description: "リクエストが不正です"
-//     },
-//     404: {
-//       description: "指定したIDのユーザーが見つかりませんでした"
-//     },
-//     500: {
-//       description: "サーバーエラーが発生しました"
-//     }
-//   }
-// })
-
-// const getUserHandler: RouteHandler<typeof getUserRoute, { Bindings: Env }> = async (c) => {
-//   const id = c.req.param("id")
-//   const db = createDb(c.env.DATABASE_URL)
-
-//   try {
-//     const user = await db.select().from(users).where(eq(users.id, id))
-//     if (user.length === 0) {
-//       return c.json({ error: "User not found" }, 404)
-//     }
-
-//     return c.json({
-//       id: user[0].id,
-//       noteUserId: user[0].noteUserId
-//     })
-//   } catch (e) {
-//     console.error(e)
-//     return c.json({ error: "Something went wrong" }, 500)
-//   }
-// }
-
-
 const createUserRoute = createRoute({
   method: "post",
   path: "/",
+  security: [{ bearerAuth: [] }],
   request: {
     body: {
       content: {
