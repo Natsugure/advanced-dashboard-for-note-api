@@ -123,7 +123,7 @@ const getMyArticlesHandler: RouteHandler<typeof getMyArticlesRoute, { Bindings: 
 
 const getArticleStatsRoute = createRoute({
   method: "get",
-  path: "/articles/{id}/stats",
+  path: "/articles/{noteArticleId}/stats",
   security: [{ bearerAuth: [] }],
   request: {
     params: StatsParamsSchema
@@ -187,6 +187,7 @@ const getArticleStatsHandler: RouteHandler<typeof getArticleStatsRoute, { Bindin
 const createStatsRoute = createRoute({
   method: "post",
   path: "/{noteArticleId}/stats",
+  security: [{ bearerAuth: [] }],
   request: {
     params: StatsParamsSchema,
     body: {
