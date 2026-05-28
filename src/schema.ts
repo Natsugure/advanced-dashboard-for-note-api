@@ -80,7 +80,7 @@ export const CreateStatsRequestSchema = z.object({
 })
 
 export const GetMyStatsResponseSchema = z.object({
-  data: z.array(z.object(GetStatsResponseSchema))
+  data: z.array(GetStatsResponseSchema)
 })
 
 // TODO: クエリでページネーションを実装するか？
