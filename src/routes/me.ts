@@ -2,8 +2,16 @@ import { createRoute, OpenAPIHono, RouteHandler } from '@hono/zod-openapi';
 import type { Env } from "../types/env";
 import { getAuth } from '@clerk/hono';
 import { createDb } from '../db/client';
-import { getUser } from '../services/user';
-import { UserSchema, GetArticlesResponseSchema, GetStatsResponseSchema, StatsParamsSchema, CreateStatsRequestSchema, GetMyStatsResponseSchema } from '../schema';
+import { getUser, updateUser } from '../services/user';
+import { 
+  UserSchema, 
+  GetArticlesResponseSchema, 
+  GetStatsResponseSchema,
+  StatsParamsSchema, 
+  CreateStatsRequestSchema, 
+  GetMyStatsResponseSchema, 
+  UpdateUserRequestSchema 
+} from '../schema';
 import { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 import { articles, stats, users } from '../db/schema';
 import { createArticle, getArticle, getArticles } from '../services/articles';
@@ -17,6 +25,7 @@ interface Variables {
 const app = new OpenAPIHono<{ Bindings: Env, Variables: Variables }>({
   defaultHook: (result, c) => {
     if (!result.success) {
+      console.error('[defaultHook] validation failed:', JSON.stringify(result.error.issues, null, 2))
       return c.json({ error: "Bad Request", details: result.error.issues }, 400)
     }
   }
@@ -67,14 +76,63 @@ const getUserRoute = createRoute({
 
 const getUserHandler: RouteHandler<typeof getUserRoute, { Bindings: Env, Variables: Variables }> = async (c) => {
   const user = c.get('user')
-  if (!user) {
-    return c.json({ error: "User not found" }, 404)
-  }
 
   return c.json({
     id: user.id,
-    noteUserId: user.noteUserId
+    noteUserId: user.noteUserId,
+    lastNoteCalculatedAt: user.lastNoteCalculatedAt
   })
+}
+
+const updateUserRoute = createRoute({
+  method: "put",
+  path: "/user",
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: UpdateUserRequestSchema
+        }
+      }
+    }
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: UserSchema
+        }
+      },
+      description: "ユーザー情報の更新に成功しました"
+    },
+    400: {
+      description: "ユーザー情報の更新に失敗しました"
+    },
+    401: {
+      description: "認証に失敗しました"
+    },
+    500: {
+      description: "サーバーエラーが発生しました"
+    }
+  }
+})
+
+const updateUserHandler: RouteHandler<typeof updateUserRoute, { Bindings: Env, Variables: Variables }> = async (c) => {
+  const user = c.get('user')
+  const db = c.get('db')
+  const body = c.req.valid('json')
+
+  try {
+    const updatedUser = await updateUser(db, user.id, new Date(body.lastNoteCalculatedAt))
+    return c.json({
+      id: updatedUser.id,
+      noteUserId: updatedUser.noteUserId,
+      lastNoteCalculatedAt: updatedUser.lastNoteCalculatedAt
+    })
+  } catch (e) {
+    return c.json({ error: "Something went wrong" }, 500)
+  }
 }
 
 const getMyArticlesRoute = createRoute({
@@ -186,7 +244,7 @@ const getArticleStatsHandler: RouteHandler<typeof getArticleStatsRoute, { Bindin
 
 const createStatsRoute = createRoute({
   method: "post",
-  path: "/{noteArticleId}/stats",
+  path: "/articles/{noteArticleId}/stats",
   security: [{ bearerAuth: [] }],
   request: {
     params: StatsParamsSchema,
@@ -323,6 +381,7 @@ export const getMyStatsHandler: RouteHandler<typeof getMyStatsRoute, { Bindings:
 
 const meRoutes = app.openapi(getUserRoute, getUserHandler)
   .openapi(getMyArticlesRoute, getMyArticlesHandler)
+  .openapi(updateUserRoute, updateUserHandler)
   .openapi(getArticleStatsRoute, getArticleStatsHandler)
   .openapi(createStatsRoute, createStatsHandler)
   .openapi(getMyStatsRoute, getMyStatsHandler)
