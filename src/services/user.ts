@@ -15,3 +15,16 @@ export async function getUser(db: ReturnType<typeof createDb>, clerkUserId: stri
     throw e
   }
 }
+
+export async function updateUser(db: ReturnType<typeof createDb>, id: string, lastNoteCalculatedAt: Date) {
+  try {
+    const user = await db.update(users).set({
+      lastNoteCalculatedAt: lastNoteCalculatedAt
+    }).where(eq(users.id, id)).returning()
+
+    return user[0]
+  } catch (e) {
+    console.error(e)
+    throw e
+  }
+}

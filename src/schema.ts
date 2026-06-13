@@ -7,6 +7,7 @@ export const AuthHeaderSchema = z.object({
 export const UserSchema = z.object({
   id: z.uuid().openapi({ example: '12345678-1234-1234-1234-1234567890ab' }),
   noteUserId: z.int().openapi({ example: 12345678 }),
+  lastNoteCalculatedAt: z.iso.datetime().openapi({ example: '2023-01-01T00:00:00.000Z' }),
 }).openapi('User')
 
 export const UserParamsSchema = z.object({
@@ -21,6 +22,10 @@ export const UserParamsSchema = z.object({
 
 export const CreateUserRequestSchema = z.object({
   noteUserId: z.int().openapi({ example: 12345678 })
+})
+
+export const UpdateUserRequestSchema = z.object({
+  lastNoteCalculatedAt: z.iso.datetime().openapi({ example: '2023-01-01T00:00:00.000Z' })
 })
 
 export const ArticleSchema = z.object({
@@ -49,7 +54,13 @@ export const StatsSchema = z.object({
 }).openapi('Stats')
 
 export const StatsParamsSchema = z.object({
-  noteArticleId: z.coerce.number().int().openapi({ example: 123456789 })
+  noteArticleId: z.coerce.number().int().openapi({
+    param: {
+      name: 'noteArticleId',
+      in: 'path'
+    },
+    example: 123456789
+  })
 })
 
 export const GetStatsResponseSchema = z.object({

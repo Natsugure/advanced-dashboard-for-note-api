@@ -7,6 +7,7 @@ export const users = pgTable("users", {
   noteUserId: integer('note_user_id').notNull().unique(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
+  lastNoteCalculatedAt: timestamp('last_note_calculated_at'),
 }, (table) => [
   check("user_id_positive", sql`${table.noteUserId} > 0`)
 ]);
