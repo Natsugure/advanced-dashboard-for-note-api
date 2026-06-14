@@ -1,9 +1,12 @@
 import { z } from "@hono/zod-openapi"
-import { baseUrls } from "../constants"
+
+const baseUrl = "https://note.com/api"
 
 export async function fetchNoteArticleDetail(key: string) {
+  const url = `${baseUrl}/v3/notes/${key}`
+
   try {
-    const res = await fetch(`${baseUrls.noteArticleDetail}/${key}`)
+    const res = await fetch(url)
     if (!res.ok) {
       throw new Error(`status: ${res.status}`)
     }
