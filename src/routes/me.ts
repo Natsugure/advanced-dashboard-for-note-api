@@ -10,12 +10,14 @@ import {
   StatsParamsSchema, 
   CreateStatsRequestSchema, 
   GetMyStatsResponseSchema, 
-  UpdateUserRequestSchema 
+  UpdateUserRequestSchema, 
+  GetDailyStatsResponseSchema,
+  GetMyStatsQuerySchema
 } from '../schema';
 import { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 import { articles, stats, users } from '../db/schema';
 import { createArticle, getArticle, getArticles } from '../services/articles';
-import { createStats, getStats } from '../services/stats';
+import { createStats, getAllMyStats, getStats, sumDailyStats } from '../services/stats';
 
 interface Variables {
   user: InferSelectModel<typeof users>
@@ -80,6 +82,8 @@ const getUserHandler: RouteHandler<typeof getUserRoute, { Bindings: Env, Variabl
   return c.json({
     id: user.id,
     noteUserId: user.noteUserId,
+    noteNickName: user.noteNickName,
+    noteUrlName: user.noteUrlName,
     lastNoteCalculatedAt: user.lastNoteCalculatedAt
   })
 }
@@ -331,6 +335,9 @@ const getMyStatsRoute = createRoute({
   method: "get",
   path: "/stats",
   security: [{ bearerAuth: [] }],
+  request: {
+    query: GetMyStatsQuerySchema
+  },
   responses: {
     200: {
       content: {
@@ -355,25 +362,49 @@ const getMyStatsRoute = createRoute({
 export const getMyStatsHandler: RouteHandler<typeof getMyStatsRoute, { Bindings: Env, Variables: Variables }> = async (c) => {
   const user = c.get('user')
   const db = c.get('db')
+  const query = c.req.valid('query')
 
   try {
-    const articles = await getArticles(db, user.id)
-    const stats = (await Promise.all(
-      articles.flatMap((article) => getStats(db, article.id))
-    )).flat()
+    const allMyStats = await getAllMyStats(db, user.id, query.from, query.to)
 
-    const result = articles.map((article) => {
-      const articleStats = stats.filter((stat) => stat.articleId === article.id)
-      return {
-        article: {
-          title: article.title,
-          publishedAt: article.publishedAt,
-        },
-        stats: articleStats
-      }
-    })
+    return c.json({ data: allMyStats })
+  } catch {
+    return c.json({ error: "Something went wrong" }, 500)
+  }
+}
 
-    return c.json({ data: result })
+export const getDailyStatsRoute = createRoute({
+  method: "get",
+  path: "/stats/daily",
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: GetDailyStatsResponseSchema
+        }
+      },
+      description: "統計の取得に成功しました"
+    },
+    400: {
+      description: "リクエストが不正です"
+    },
+    401: {
+      description: "認証に失敗しました"
+    },
+    500: {
+      description: "サーバーエラーが発生しました"
+    }
+  }
+})
+
+export const getDailyStatsHandler: RouteHandler<typeof getDailyStatsRoute, { Bindings: Env, Variables: Variables }> = async (c) => {
+  const user = c.get('user')
+  const db = c.get('db')
+
+  try {
+    const stats = await sumDailyStats(db, user.id)
+    return c.json({ data: stats })
   } catch {
     return c.json({ error: "Something went wrong" }, 500)
   }
@@ -385,5 +416,6 @@ const meRoutes = app.openapi(getUserRoute, getUserHandler)
   .openapi(getArticleStatsRoute, getArticleStatsHandler)
   .openapi(createStatsRoute, createStatsHandler)
   .openapi(getMyStatsRoute, getMyStatsHandler)
+  .openapi(getDailyStatsRoute, getDailyStatsHandler)
 
 export default meRoutes
