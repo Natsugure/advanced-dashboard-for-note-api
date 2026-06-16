@@ -71,6 +71,8 @@ const createUserHandler: RouteHandler<typeof createUserRoute, { Bindings: Env }>
     const newUser = await db.insert(users).values({
       clerkUserId: auth.userId,
       noteUserId: body.noteUserId,
+      noteNickName: body.noteNickName,
+      noteUrlName: body.noteUrlName
     }).returning()
 
     return c.json(newUser[0], 201)
