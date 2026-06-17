@@ -7,6 +7,8 @@ export const AuthHeaderSchema = z.object({
 export const UserSchema = z.object({
   id: z.uuid().openapi({ example: '12345678-1234-1234-1234-1234567890ab' }),
   noteUserId: z.int().openapi({ example: 12345678 }),
+  noteNickName: z.string(),
+  noteUrlName: z.string(),
   lastNoteCalculatedAt: z.iso.datetime().openapi({ example: '2023-01-01T00:00:00.000Z' }),
 }).openapi('User')
 
@@ -21,7 +23,9 @@ export const UserParamsSchema = z.object({
 })
 
 export const CreateUserRequestSchema = z.object({
-  noteUserId: z.int().openapi({ example: 12345678 })
+  noteUserId: z.int().openapi({ example: 12345678 }),
+  noteNickName: z.string(),
+  noteUrlName: z.string(),
 })
 
 export const UpdateUserRequestSchema = z.object({
@@ -66,6 +70,7 @@ export const StatsParamsSchema = z.object({
 export const GetStatsResponseSchema = z.object({
   article: z.object({
     title: z.string(),
+    key: z.string(),
     publishedAt: z.iso.datetime(),
   }),
   stats: z.array(z.object({
@@ -90,9 +95,22 @@ export const CreateStatsRequestSchema = z.object({
   })
 })
 
+export const GetMyStatsQuerySchema = z.object({
+  from: z.iso.date().pipe(z.coerce.date()).optional().openapi({ example: '2023-01-01' }),
+  to: z.iso.date().pipe(z.coerce.date()).optional().openapi({ example: '2023-01-31' }),
+})
+
 export const GetMyStatsResponseSchema = z.object({
   data: z.array(GetStatsResponseSchema)
 })
 
-// TODO: クエリでページネーションを実装するか？
-// あと、1000記事とか書いている人が全記事の統計をフロントに持たないと、サマリーすら表示できないのは設計として不便ではないか？
+export const DailyStatsSchema = z.object({
+  date: z.string().openapi({ example: '2023-01-01' }),
+  totalReads: z.int(),
+  totalLikes: z.int(),
+  totalComments: z.int(),
+}).openapi('DailyStats')
+
+export const GetDailyStatsResponseSchema = z.object({
+  data: z.array(DailyStatsSchema)
+})

@@ -5,6 +5,8 @@ export const users = pgTable("users", {
   id: uuid('id').primaryKey().default(sql`uuidv7()`),
   clerkUserId: varchar('clerk_user_id', { length: 64 }).notNull().unique(),
   noteUserId: integer('note_user_id').notNull().unique(),
+  noteNickName: varchar('note_nick_name', { length: 255 }).notNull(),
+  noteUrlName: varchar('note_url_name', { length: 255 }).notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
   lastNoteCalculatedAt: timestamp('last_note_calculated_at'),
