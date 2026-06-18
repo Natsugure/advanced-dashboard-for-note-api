@@ -91,7 +91,7 @@ export async function getStats(db: ReturnType<typeof createDb>, id: number) {
  * 
  * @param db 
  * @param data 
- * @returns 挿入したデータ。重複した値でリクエストした場合は`null`。
+ * @returns 挿入したデータ。
  */
 export async function createStats(db: ReturnType<typeof createDb>, data: InferInsertModel<typeof stats>) {
   try {
@@ -105,7 +105,21 @@ export async function createStats(db: ReturnType<typeof createDb>, data: InferIn
     .onConflictDoNothing({ target: [stats.articleId, stats.fetchedAt] })
     .returning()
 
-    return result.at(0) ?? null
+    // 重複レコードがあってinsertリクエストの戻り値がなかった場合、既存レコードを返す
+    if (result.length === 0) {
+      const existing = await db.select().from(stats)
+        .where(
+          and(
+            eq(stats.articleId, data.articleId),
+            eq(stats.fetchedAt, data.fetchedAt)
+          )
+        )
+      const record = existing.at(0)
+      if (!record) throw new Error("Unexpected: conflicting record not found")
+      return record
+    }
+
+    return result.at(0)! // 直前でinsertに成功しているので確実に存在する
   } catch (e) {
     console.error(e)
     throw e

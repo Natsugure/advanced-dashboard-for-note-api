@@ -101,12 +101,12 @@ export const CreateStatsResponseSchema = z.object({
     key: z.string(),
     publishedAt: z.iso.datetime(),
   }),
-  stats: z.nullable(z.object({
+  stats: z.object({
     readCount: z.int(),
     likeCount: z.int(),
     commentCount: z.int(),
     fetchedAt: z.iso.datetime(),
-  }))
+  })
 })
 
 export const GetMyStatsQuerySchema = z.object({
