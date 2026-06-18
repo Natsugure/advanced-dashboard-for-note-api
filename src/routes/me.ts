@@ -12,7 +12,8 @@ import {
   GetMyStatsResponseSchema, 
   UpdateUserRequestSchema, 
   GetDailyStatsResponseSchema,
-  GetMyStatsQuerySchema
+  GetMyStatsQuerySchema,
+  CreateStatsResponseSchema
 } from '../schema';
 import { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 import { articles, stats, users } from '../db/schema';
@@ -264,7 +265,7 @@ const createStatsRoute = createRoute({
     201: {
       content: {
         "application/json": {
-          schema: GetStatsResponseSchema
+          schema: CreateStatsResponseSchema
         }
       },
       description: "統計情報の作成に成功しました"
@@ -314,7 +315,6 @@ const createStatsHandler: RouteHandler<typeof createStatsRoute, { Bindings: Env,
     return c.json({
       article: {
         key: article.key,
-        userId: article.userId,
         title: article.title,
         publishedAt: article.publishedAt,
       },

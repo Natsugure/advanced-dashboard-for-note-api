@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, integer, check } from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar, timestamp, integer, check, unique } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 export const users = pgTable("users", {
@@ -30,6 +30,7 @@ export const stats = pgTable("stats", {
   commentCount: integer("comment_count").notNull().default(0),
   fetchedAt: timestamp("fetched_at").notNull(),
 }, (table) => [
+  unique("stats_article_id_fetched_at_unique").on(table.articleId, table.fetchedAt), // 追加
   check("read_count_positive", sql`${table.readCount} >= 0`),
   check("like_count_positive", sql`${table.likeCount} >= 0`),
   check("comment_count_positive", sql`${table.commentCount} >= 0`)

@@ -95,6 +95,20 @@ export const CreateStatsRequestSchema = z.object({
   })
 })
 
+export const CreateStatsResponseSchema = z.object({
+  article: z.object({
+    title: z.string(),
+    key: z.string(),
+    publishedAt: z.iso.datetime(),
+  }),
+  stats: z.nullable(z.object({
+    readCount: z.int(),
+    likeCount: z.int(),
+    commentCount: z.int(),
+    fetchedAt: z.iso.datetime(),
+  }))
+})
+
 export const GetMyStatsQuerySchema = z.object({
   from: z.iso.date().pipe(z.coerce.date()).optional().openapi({ example: '2023-01-01' }),
   to: z.iso.date().pipe(z.coerce.date()).optional().openapi({ example: '2023-01-31' }),

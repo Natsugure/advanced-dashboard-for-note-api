@@ -84,17 +84,28 @@ export async function getStats(db: ReturnType<typeof createDb>, id: number) {
   return await db.select().from(stats).where(eq(stats.articleId, id))
 }
 
+
+/**
+ * 統計をDBに登録する。
+ * `articleId`と`fetchedAt`のユニーク制約に対してonConflictDoNothingを指定することで冪等性が確保されている。
+ * 
+ * @param db 
+ * @param data 
+ * @returns 挿入したデータ。重複した値でリクエストした場合は`null`。
+ */
 export async function createStats(db: ReturnType<typeof createDb>, data: InferInsertModel<typeof stats>) {
   try {
-    const newStats = await db.insert(stats).values({
+    const result = await db.insert(stats).values({
       articleId: data.articleId,
       readCount: data.readCount,
       likeCount: data.likeCount,
       commentCount: data.commentCount,
       fetchedAt: data.fetchedAt,
-    }).returning()
+    })
+    .onConflictDoNothing({ target: [stats.articleId, stats.fetchedAt] })
+    .returning()
 
-    return newStats[0]
+    return result.at(0) ?? null
   } catch (e) {
     console.error(e)
     throw e
