@@ -84,17 +84,42 @@ export async function getStats(db: ReturnType<typeof createDb>, id: number) {
   return await db.select().from(stats).where(eq(stats.articleId, id))
 }
 
+
+/**
+ * 統計をDBに登録する。
+ * `articleId`と`fetchedAt`のユニーク制約に対してonConflictDoNothingを指定することで冪等性が確保されている。
+ * 
+ * @param db 
+ * @param data 
+ * @returns 挿入したデータ。
+ */
 export async function createStats(db: ReturnType<typeof createDb>, data: InferInsertModel<typeof stats>) {
   try {
-    const newStats = await db.insert(stats).values({
+    const result = await db.insert(stats).values({
       articleId: data.articleId,
       readCount: data.readCount,
       likeCount: data.likeCount,
       commentCount: data.commentCount,
       fetchedAt: data.fetchedAt,
-    }).returning()
+    })
+    .onConflictDoNothing({ target: [stats.articleId, stats.fetchedAt] })
+    .returning()
 
-    return newStats[0]
+    // 重複レコードがあってinsertリクエストの戻り値がなかった場合、既存レコードを返す
+    if (result.length === 0) {
+      const existing = await db.select().from(stats)
+        .where(
+          and(
+            eq(stats.articleId, data.articleId),
+            eq(stats.fetchedAt, data.fetchedAt)
+          )
+        )
+      const record = existing.at(0)
+      if (!record) throw new Error("Unexpected: conflicting record not found")
+      return record
+    }
+
+    return result.at(0)! // 直前でinsertに成功しているので確実に存在する
   } catch (e) {
     console.error(e)
     throw e
