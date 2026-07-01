@@ -26,8 +26,8 @@ app.use('*', async (c, next) => {
 
 app.use('*', clerkMiddleware());
 
-app.route('/api/users', usersRoutes)
-app.route('/api/me', meRoutes)
+app.route('/users', usersRoutes)
+app.route('/me', meRoutes)
 
 app.onError((err, c) => {
   if (err instanceof TypeError && err.message.includes('cannot have a body')) {
@@ -42,7 +42,7 @@ app.onError((err, c) => {
   return c.json({ error: "Something went wrong" }, 500)
 })
 
-app.doc('/api/docs', {
+app.doc('/docs', {
   openapi: '3.0.0',
   info: {
     title: 'Advanced Dashboard for note API',
@@ -50,6 +50,6 @@ app.doc('/api/docs', {
   }
 })
 
-app.get('/docs/ui', swaggerUI({ url: '/api/docs' }))
+app.get('/docs/ui', swaggerUI({ url: '/docs' }))
 
 export default app
