@@ -1,6 +1,9 @@
 {
   "name": "advanced-dashboard-for-note-api",
   "type": "module",
+  "pnpm": {
+    "onlyBuiltDependencies": ["@clerk/shared", "esbuild"]
+  },
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --minify",
