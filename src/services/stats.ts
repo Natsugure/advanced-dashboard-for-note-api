@@ -2,6 +2,7 @@ import { createDb } from "../db/client";
 import { and, eq, gte, lte, sum, sql, type InferInsertModel } from "drizzle-orm";
 import { articles, stats } from "../db/schema";
 
+
 export async function getAllMyStats(
   db: ReturnType<typeof createDb>,
   userId: string,
@@ -9,6 +10,7 @@ export async function getAllMyStats(
   to?: Date
 ) {
   try {
+    const latest = latestPerDay(db)
     const rows = await db
         .select({
           articleId: stats.articleId,
@@ -21,6 +23,10 @@ export async function getAllMyStats(
           fetchedAt: stats.fetchedAt,
         })
         .from(stats)
+        .innerJoin(latest, and(
+          eq(stats.articleId, latest.articleId),
+          eq(stats.fetchedAt, latest.maxFetchedAt)
+        ))
         .innerJoin(articles, eq(stats.articleId, articles.id))
         .where(
           and(
@@ -66,6 +72,8 @@ export async function getAllMyStats(
 }
 
 export async function sumDailyStats(db: ReturnType<typeof createDb>, userId: string) {
+  const latest = latestPerDay(db)
+  
   return await db
     .select({
       date: sql<string>`DATE(${stats.fetchedAt})`,
@@ -74,6 +82,10 @@ export async function sumDailyStats(db: ReturnType<typeof createDb>, userId: str
       totalComments: sum(stats.commentCount),
     })
     .from(stats)
+    .innerJoin(latest, and(
+      eq(stats.articleId, latest.articleId),
+      eq(stats.fetchedAt, latest.maxFetchedAt)
+    ))
     .innerJoin(articles, eq(stats.articleId, articles.id))
     .where(eq(articles.userId, userId))
     .groupBy(sql`DATE(${stats.fetchedAt})`)
@@ -124,4 +136,15 @@ export async function createStats(db: ReturnType<typeof createDb>, data: InferIn
     console.error(e)
     throw e
   }
+}
+
+function latestPerDay(db: ReturnType<typeof createDb>) {
+  return db
+    .select({
+      articleId: stats.articleId,
+      maxFetchedAt: sql<Date>`MAX(${stats.fetchedAt})`.as("max_fetched_at")
+    })
+    .from(stats)
+    .groupBy(stats.articleId, sql`DATE(${stats.fetchedAt})`)
+    .as("latest_per_day")
 }
