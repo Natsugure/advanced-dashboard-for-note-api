@@ -11,7 +11,6 @@ export async function getUser(db: ReturnType<typeof createDb>, clerkUserId: stri
   
     return user[0]
   } catch (e) {
-    console.error(e)
     throw e
   }
 }
@@ -24,7 +23,6 @@ export async function updateUser(db: ReturnType<typeof createDb>, id: string, la
 
     return user[0]
   } catch (e) {
-    console.error(e)
     throw e
   }
 }

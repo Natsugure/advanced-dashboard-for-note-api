@@ -33,7 +33,6 @@ export async function createArticle(db: ReturnType<typeof createDb>, data: Infer
 
     return newArticle[0]
   } catch (e) {
-    console.error(e)
     throw e
   }
 }

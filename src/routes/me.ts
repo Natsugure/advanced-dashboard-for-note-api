@@ -136,6 +136,7 @@ const updateUserHandler: RouteHandler<typeof updateUserRoute, { Bindings: Env, V
       lastNoteCalculatedAt: updatedUser.lastNoteCalculatedAt
     })
   } catch (e) {
+    console.error('[updateUser] userId=%s', user.id, e)
     return c.json({ error: "Something went wrong" }, 500)
   }
 }
@@ -179,7 +180,8 @@ const getMyArticlesHandler: RouteHandler<typeof getMyArticlesRoute, { Bindings: 
         publishedAt: article.publishedAt,
       }))
     })
-  } catch {
+  } catch (e) {
+    console.error('[getMyArticles] userId=%s', user.id, e)
     return c.json({ error: "Something went wrong" }, 500)
   }
 }
@@ -242,7 +244,7 @@ const getArticleStatsHandler: RouteHandler<typeof getArticleStatsRoute, { Bindin
       }))
     }, 200)
   } catch (e) {
-    console.error(e)
+    console.error('[getArticleStats] noteArticleId=%d userId=%s', noteArticleId, user.id, e)
     return c.json({ error: "Something went wrong" }, 500)
   }
 }
@@ -321,7 +323,7 @@ const createStatsHandler: RouteHandler<typeof createStatsRoute, { Bindings: Env,
       stats: newStats
     })
   } catch (e) {
-    console.error(e)
+    console.error('[createStats] noteArticleId=%d userId=%s', noteArticleId, user.id, e)
 
     if (e instanceof Error && e.message === "Invalid article") {
       return c.json({ error: "Invalid article" }, 400)
@@ -368,7 +370,8 @@ export const getMyStatsHandler: RouteHandler<typeof getMyStatsRoute, { Bindings:
     const allMyStats = await getAllMyStats(db, user.id, query.from, query.to)
 
     return c.json({ data: allMyStats })
-  } catch {
+  } catch (e) {
+    console.error('[getMyStats] userId=%s', user.id, e)
     return c.json({ error: "Something went wrong" }, 500)
   }
 }
@@ -405,7 +408,8 @@ export const getDailyStatsHandler: RouteHandler<typeof getDailyStatsRoute, { Bin
   try {
     const stats = await sumDailyStats(db, user.id)
     return c.json({ data: stats })
-  } catch {
+  } catch (e) {
+    console.error('[getDailyStats] userId=%s', user.id, e)
     return c.json({ error: "Something went wrong" }, 500)
   }
 }

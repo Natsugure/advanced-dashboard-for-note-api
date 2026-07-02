@@ -66,7 +66,6 @@ export async function getAllMyStats(
 
     return Array.from(grouped.values())
   } catch (e) {
-    console.error(e)
     throw e
   }
 }
@@ -133,7 +132,6 @@ export async function createStats(db: ReturnType<typeof createDb>, data: InferIn
 
     return result.at(0)! // 直前でinsertに成功しているので確実に存在する
   } catch (e) {
-    console.error(e)
     throw e
   }
 }

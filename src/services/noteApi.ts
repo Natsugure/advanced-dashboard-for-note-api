@@ -14,7 +14,6 @@ export async function fetchNoteArticleDetail(key: string) {
     const note = NoteApiSchema.parse(await res.json())
     return note.data
   } catch (e) {
-    console.error(e)
     throw e
   }
 }

@@ -16,8 +16,13 @@ app.openAPIRegistry.registerComponent('securitySchemes', 'bearerAuth', {
 })
 
 app.use('*', async (c, next) => {
+  const allowedOrigins = [c.env.CORS_ORIGIN_WEB]
+  if (c.env.CORS_ORIGIN_EXTENSION) {
+    allowedOrigins.push(c.env.CORS_ORIGIN_EXTENSION)
+  }
+
   const corsMiddleware = cors({
-    origin: c.env.CORS_ORIGIN,
+    origin: allowedOrigins,
     allowHeaders: ['Authorization', 'Content-Type'],
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   })
