@@ -4,7 +4,7 @@ import { users } from "../db/schema";
 import { getAuth } from "@clerk/hono";
 import { createDb } from "../db/client";
 import type { Env } from "../types/env";
-import { CreateUserRequestSchema, UserParamsSchema, UserSchema } from '../schema';
+import { CreateUserRequestSchema, UserSchema } from '../schema';
 
 const app = new OpenAPIHono<{ Bindings: Env }>({
   defaultHook: (result, c) => {
@@ -77,7 +77,7 @@ const createUserHandler: RouteHandler<typeof createUserRoute, { Bindings: Env }>
 
     return c.json(newUser[0], 201)
   } catch (e) {
-    console.error(e)
+    console.error('[createUser] clerkUserId=%s', auth.userId, e)
     return c.json({ error: "Something went wrong" }, 500)
   }
 }

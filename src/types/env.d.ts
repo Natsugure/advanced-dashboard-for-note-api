@@ -1,4 +1,4 @@
 export interface Env {
   readonly DATABASE_URL: string
-  readonly CORS_ORIGIN: string
+  readonly CORS_ORIGIN_WEB: string
 }
