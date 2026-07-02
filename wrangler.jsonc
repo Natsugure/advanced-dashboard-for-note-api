@@ -13,5 +13,11 @@
         "CORS_ORIGIN_WEB": "https://ad4n.dev",
       }
     }
+  },
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
   }
 }
